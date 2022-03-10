@@ -16,7 +16,7 @@ if __name__ == '__main__':
     # Create root #
     #=============#
     root = tk.Tk()
-    root.title("Image Show")
+    root.title("Envmap viewer")
     root.resizable(width=False, height=False)
     #===============#
     # Create frames #
@@ -106,12 +106,20 @@ if __name__ == '__main__':
         x = val1.get()
         y = val2.get()
         z = val3.get()
-        rotated = pem.rotateByEularXYZ(img_bgr_start, x, y, z)
+        rotated, R = pem.rotateByEularXYZ(img_bgr_start, x, y, z)
         rotated_tk = formatConverter(rotated)
         imgCVT.configure(image=rotated_tk)
         label_val1.configure(text=x)
         label_val2.configure(text=y)
         label_val3.configure(text=z)
+        R_text = ""
+        for j in range(3):
+            for i in range(3):
+                pad = " " if R[i, j] >= 0 else ""
+                R_text += (pad + '{:.5f}'.format(R[i, j]) + " ")
+            R_text += '\n'
+        # rot_val_var.set(R_text)
+        text_box.insert('1.0', R_text)
 
     #    imgCVT.photo = blur_tk     #If you do not want "blur_tk" to be global val, activate this script instead.
     #    imgCVT.image = blur_tk     #This will work as well as above.
@@ -172,6 +180,12 @@ if __name__ == '__main__':
 
     load()
 
+    #rot_val_var = tk.StringVar(frmR,)
+    #rot_val_var.set("1 0 0\n0 1 0\n0 0 1\n")
+    #rot_val_ent = tk.Entry(frmR, textvariable=rot_val_var,)
+
+    text_box = tk.Text(height=3, width=30)
+
     save_path_var = tk.StringVar(frmR)
     save_path_var.set("./out" + org_ext)
     save_path_ent = tk.Entry(frmR, textvariable=save_path_var)
@@ -183,9 +197,10 @@ if __name__ == '__main__':
     #========#
     # Layout #
     #========#
-    frmL.pack(side='left')
-    frmC.pack(side='left')
+    frmL.pack(side='top')
+    frmC.pack(side='top')
     frmR.pack(side='left')
+
     imgORG.pack(side='top')
     label_imgORG.pack(side='top')
     imgCVT.pack(side='top')
@@ -198,6 +213,8 @@ if __name__ == '__main__':
     scale2.pack(side='top')
     label_val2.pack(side='top')
     scale3.pack(side='top')
+    text_box.pack(side='top')
+    # rot_val_ent.pack(side='top')
     label_val3.pack(side='top')
     save_path_ent.pack(side='top')
     save_button.pack(side='top')

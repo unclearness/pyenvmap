@@ -123,4 +123,4 @@ def rotateByMatrix(src, R):
 def rotateByEularXYZ(src, x, y, z):
     rot = Rotation.from_euler('xyz', [x, y, z], degrees=True)
     R = rot.as_matrix()
-    return rotateByMatrix(src, R)
+    return rotateByMatrix(src, R), R
