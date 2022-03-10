@@ -1,52 +1,94 @@
 from scipy.spatial.transform import Rotation
+from scipy import interpolate
 import numpy as np
 
 
-def genSampleAngle(h, w, l0=0.0, p0=0.0, p1=0.0, r=1.0):
+def genSampleAngle(h, w):
     x, y = np.meshgrid(range(0, w), range(0, h))
-    theta = x * 2 * np.pi / (w - 1)
-    phi = y * np.pi / (h - 1)
-    return theta, phi
+    phi = x / (w-1) * 2 * np.pi
+    # phi = (x+0.5) / w * 2 * np.pi
+    theta = y / (h-1) * np.pi
+    # theta = (y+0.5) / h * np.pi
+    return phi, theta
 
 
-def genSampleVector(h, w, l0=0.0, p0=0.0, p1=0.0, r=1.0):
+def genSampleVector(h, w):
     # image coordinate to angles
-    l, p = genSampleAngle(h, w, l0, p0, p1, r)
-    x = r * np.cos(l) * np.sin(p)
-    y = r * np.sin(l) * np.sin(p)
-    z = r * np.cos(p)
+    phi, theta = genSampleAngle(h, w)
+    x = np.cos(phi) * np.sin(theta)
+    y = np.sin(phi) * np.sin(theta)
+    z = np.cos(theta)
     return np.stack([x, y, z], axis=-1)
 
+# https://stackoverflow.com/questions/12729228/simple-efficient-bilinear-interpolation-of-images-in-numpy-and-python
 
-def samplePixColor(src, sample_vector, l0=0.0, p0=0.0, p1=0.0, r=1.0):
+
+def bilinear_interpolate(im, x, y):
+    x = np.asarray(x)
+    y = np.asarray(y)
+
+    x0 = np.floor(x).astype(int)
+    x1 = x0 + 1
+    y0 = np.floor(y).astype(int)
+    y1 = y0 + 1
+
+    # x0 = np.clip(x0, 0, im.shape[1]-1)
+    # x1 = np.clip(x1, 0, im.shape[1]-1)
+
+    # Interpolation for x should be circular
+    # TODO: Really correct?
+    x0_ = x0
+    x1_ = x1
+    x0 = np.mod(x0, im.shape[1])
+    x1 = np.mod(x1, im.shape[1])
+
+    y0 = np.clip(y0, 0, im.shape[0]-1)
+    y1 = np.clip(y1, 0, im.shape[0]-1)
+
+    Ia = im[y0, x0]
+    Ib = im[y1, x0]
+    Ic = im[y0, x1]
+    Id = im[y1, x1]
+
+    wa = (x1_-x) * (y1-y)
+    wb = (x1_-x) * (y-y0)
+    wc = (x-x0_) * (y1-y)
+    wd = (x-x0_) * (y-y0)
+
+    # return (Ia.T*wa).T + (Ib.T*wb).T + (Ic.T*wc).T + (Id.T*wd).T
+    return wa*Ia + wb*Ib + wc*Ic + wd*Id
+
+
+def samplePixColor(src, sample_vector, bilinear=False):
     h, w, c = src.shape
+    sample_vector = np.clip(sample_vector, -1, 1)
     x, y, z = sample_vector[..., 0], sample_vector[...,
                                                    1], sample_vector[..., 2]
-    p = np.arccos(z / r)
-    l = np.arctan2(y, x)  # TODO
-    #p[np.bitwise_and(x < 0, y >= 0)] += np.pi
-    #p[np.bitwise_and(x < 0, y < 0)] -= np.pi
-    #p[np.bitwise_and(x == 0, y >= 0)] = np.pi / 2
-    #p[np.bitwise_and(x == 0, y < 0)] = -np.pi / 2
-    #print("l", np.max(l), np.min(l))
-    #print("p", np.max(p), np.min(p))
+    theta = np.arccos(z)
+    phi = np.arctan2(y, x)
 
-    x = r*(l / (2 * np.pi)-l0)*np.cos(p1)
-    y = r*(p / (np.pi)-p0)
+    theta = np.clip(theta, 0, np.pi)
+    phi = np.mod(phi, 2 * np.pi)
 
-    #print("x", np.max(x), np.min(x))
-    #print("y", np.max(y), np.min(y))
+    x = phi / (2 * np.pi)
+    y = theta / np.pi
 
-    x = x * (w-1)
-    y = y * (h-1)
+    x = x * (w - 1)
+    #x = x * w - 0.5
+    y = y * (h - 1)
+    # y = y * h - 0.5
 
-    #TODO: bilinear
-    x, y = np.array(x, dtype=np.int), np.array(y, dtype=np.int)
-    # TODO
-    x = np.mod(x, w-1)
-    #y = np.mod(y, h-1)
-
-    dst = src[y, x]
+    # TODO: Should 3D coordinates instead of image coordinates are considered?
+    if bilinear:
+        dst = []
+        for i in range(c):
+            dst.append(bilinear_interpolate(src[..., i], x, y))
+        dst = np.stack(dst, axis=-1).astype(src.dtype)
+    else:
+        # Nearest Neighbor
+        x, y = np.array(np.round(x), dtype=np.int), np.array(
+            np.round(y), dtype=np.int)
+        dst = src[y, x]
 
     return dst
 
