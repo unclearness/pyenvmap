@@ -69,12 +69,38 @@ if __name__ == '__main__':
         imgCVT.configure(image=c_img_tk)
 
     def save(event=None):
+        global save_path_var
         x = val1.get()
         y = val2.get()
         z = val3.get()
-        rotated = pem.rotateByEularXYZ(img_bgr_org, x, y, z)
+        rotated, _ = pem.rotateByEularXYZ(img_bgr_org, x, y, z)
         save_path = save_path_var.get()
         cv2.imwrite(save_path, rotated)
+
+    def load_mat(event=None):
+        global imgCVT, rotated_tk
+        R_text = text_box.get('1.0', 'end')
+        lines = R_text.split('\n')
+        R_line = []
+        for line in lines:
+            line = line.rstrip().split(' ')
+            line = [float(x) for x in line if len(x) > 0]
+            R_line += line
+        if len(R_line) != 9:
+            print('Elements are not 9')
+            return
+        R = np.array(R_line).reshape((3, 3))
+        if np.abs(np.linalg.det(R) - 1) > 0.01:
+            print('determinant is not 1')
+            return
+        rotated = pem.rotateByMatrix(img_bgr_start, R)
+        rotated_tk = formatConverter(rotated)
+        imgCVT.configure(image=rotated_tk)
+
+        x, y, z = pem.mat2eular(R)
+        label_val1.configure(text=x)
+        label_val2.configure(text=y)
+        label_val3.configure(text=z)
 
     #==============#
     # Make img src #
@@ -93,7 +119,7 @@ if __name__ == '__main__':
 
     # Do not forget 'event=None', or an arg error occurs.
     def changeVal(event=None):
-        global imgCVT, blur_tk, rotated_tk
+        global imgCVT, rotated_tk
         """
         size = 3 ** val1.get()
         sigma = val2.get()
@@ -115,10 +141,11 @@ if __name__ == '__main__':
         R_text = ""
         for j in range(3):
             for i in range(3):
-                pad = " " if R[i, j] >= 0 else ""
-                R_text += (pad + '{:.5f}'.format(R[i, j]) + " ")
+                pad = " " if R[j, i] >= 0 else ""
+                R_text += (pad + '{:.5f}'.format(R[j, i]) + " ")
             R_text += '\n'
         # rot_val_var.set(R_text)
+        text_box.delete('1.0', 'end')
         text_box.insert('1.0', R_text)
 
     #    imgCVT.photo = blur_tk     #If you do not want "blur_tk" to be global val, activate this script instead.
@@ -185,6 +212,10 @@ if __name__ == '__main__':
     #rot_val_ent = tk.Entry(frmR, textvariable=rot_val_var,)
 
     text_box = tk.Text(height=3, width=30)
+    load_mat_text = tk.StringVar(frmR)
+    load_mat_text.set("Load 3*3 rotation matrix")
+    load_mat_button = tk.Button(
+        frmR, textvariable=load_mat_text, command=load_mat)
 
     save_path_var = tk.StringVar(frmR)
     save_path_var.set("./out" + org_ext)
@@ -214,6 +245,7 @@ if __name__ == '__main__':
     label_val2.pack(side='top')
     scale3.pack(side='top')
     text_box.pack(side='top')
+    load_mat_button.pack(side='top')
     # rot_val_ent.pack(side='top')
     label_val3.pack(side='top')
     save_path_ent.pack(side='top')

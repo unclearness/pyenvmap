@@ -1,3 +1,4 @@
+from math import degrees
 from scipy.spatial.transform import Rotation
 from scipy import interpolate
 import numpy as np
@@ -124,3 +125,9 @@ def rotateByEularXYZ(src, x, y, z):
     rot = Rotation.from_euler('xyz', [x, y, z], degrees=True)
     R = rot.as_matrix()
     return rotateByMatrix(src, R), R
+
+
+def mat2eular(R):
+    rot = Rotation.from_matrix(R)
+    x, y, z = rot.as_euler('xyz', degrees=True)
+    return x, y, z
