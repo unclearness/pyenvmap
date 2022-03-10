@@ -6,6 +6,9 @@ from tkinter import HORIZONTAL
 from PIL import Image, ImageTk
 import cv2
 import numpy as np
+import os
+
+view_img_width = 640
 
 if __name__ == '__main__':
 
@@ -33,22 +36,53 @@ if __name__ == '__main__':
         # Convert to ImageTk format.
         img_tk = ImageTk.PhotoImage(img_pil)
         return img_tk
+
+    def load(event=None):
+        # Read image
+        global img_bgr_org, img_bgr, org_ext, img_bgr_start, img_tk, c_img_tk
+        src_path = load_path_ent.get()
+
+        _, org_ext = os.path.splitext(src_path)
+        if org_ext is None or len(org_ext) < 4:
+            img_bgr = np.ones(
+                (int(view_img_width / 2), view_img_width, 3), dtype=np.uint8) * 255
+        else:
+            img_bgr = cv2.imread(src_path, -1)
+        img_bgr_org = img_bgr.copy()
+        if org_ext.lower() in ['.exr', '.hdr']:
+            # print(np.min(img_bgr, (0, 1)))
+            img_bgr = (img_bgr - np.min(img_bgr, (0, 1)) /
+                       np.max(img_bgr, (0, 1)) - np.min(img_bgr, (0, 1))) * 255
+        img_bgr = np.clip(img_bgr, 0, 255).astype(np.uint8)
+
+        view_img_height = int(
+            img_bgr.shape[0] / img_bgr.shape[1] * view_img_width)
+        img_bgr = cv2.resize(img_bgr, (view_img_width, view_img_height))
+        img_bgr_start = img_bgr.copy()
+
+        # For image processing
+        img_tk = formatConverter(img_bgr)
+        # For original image
+        c_img_tk = formatConverter(img_bgr)
+
+        imgORG.configure(image=img_tk)
+        imgCVT.configure(image=c_img_tk)
+
+    def save(event=None):
+        x = val1.get()
+        y = val2.get()
+        z = val3.get()
+        rotated = pem.rotateByEularXYZ(img_bgr_org, x, y, z)
+        save_path = save_path_var.get()
+        cv2.imwrite(save_path, rotated)
+
     #==============#
     # Make img src #
     #==============#
-    # Read image
-    src_path = "./data/studio_small_09_4k.exr"
-    src_path = "./data/color.png"
-    img_bgr = cv2.imread(src_path, -1)[..., :3]
-    img_bgr_org = img_bgr.copy()
-    # img_bgr = (img_bgr - np.min(img_bgr) /
-    #           np.max(img_bgr) - np.min(img_bgr)) * 255
-    img_bgr = np.clip(img_bgr, 0, 255).astype(np.uint8)
 
-    view_img_width = 640
-    view_img_height = int(img_bgr.shape[0] / img_bgr.shape[1] * view_img_width)
-    img_bgr = cv2.resize(img_bgr, (view_img_width, view_img_height))
-    img_bgr_start = img_bgr.copy()
+    img_bgr = np.ones(
+        (int(view_img_width / 2), view_img_width, 3), dtype=np.uint8) * 255
+
     # For image processing
     img_tk = formatConverter(img_bgr)
     # For original image
@@ -128,6 +162,24 @@ if __name__ == '__main__':
     label_val2 = tk.Label(frmR, text="0")
     label_val3 = tk.Label(frmR, text="0")
 
+    load_path_var = tk.StringVar(frmR)
+    load_path_var.set("./data/studio_small_09_4k.exr")
+    load_path_ent = tk.Entry(frmR, textvariable=load_path_var)
+
+    load_text = tk.StringVar(frmR)
+    load_text.set("Load")
+    load_button = tk.Button(frmR, textvariable=load_text, command=load)
+
+    load()
+
+    save_path_var = tk.StringVar(frmR)
+    save_path_var.set("./out" + org_ext)
+    save_path_ent = tk.Entry(frmR, textvariable=save_path_var)
+
+    save_text = tk.StringVar(frmR)
+    save_text.set("Save")
+    save_button = tk.Button(frmR, textvariable=save_text, command=save)
+
     #========#
     # Layout #
     #========#
@@ -138,10 +190,16 @@ if __name__ == '__main__':
     label_imgORG.pack(side='top')
     imgCVT.pack(side='top')
     label_imgCVT.pack(side='top')
+
+    load_path_ent.pack(side='top')
+    load_button.pack(side='top')
     scale1.pack(side='top')
     label_val1.pack(side='top')
     scale2.pack(side='top')
     label_val2.pack(side='top')
     scale3.pack(side='top')
     label_val3.pack(side='top')
+    save_path_ent.pack(side='top')
+    save_button.pack(side='top')
+
     root.mainloop()
