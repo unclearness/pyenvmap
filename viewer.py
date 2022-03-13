@@ -157,7 +157,7 @@ if __name__ == '__main__':
         to=360,
         resolution=1,
         showvalue=0,
-        label="Eular X",
+        label="Euler X",
         orient=tk.HORIZONTAL,
         command=changeVal
     )
@@ -169,7 +169,7 @@ if __name__ == '__main__':
         to=360,
         resolution=1,
         showvalue=0,
-        label="Eular Y",
+        label="Euler Y",
         orient=tk.HORIZONTAL,
         command=changeVal
     )
@@ -181,7 +181,7 @@ if __name__ == '__main__':
         to=360,
         resolution=1,
         showvalue=0,
-        label="Eular Z",
+        label="Euler Z",
         orient=tk.HORIZONTAL,
         command=changeVal
     )

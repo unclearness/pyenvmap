@@ -8,7 +8,7 @@ Environment map utilities in python.
 
 Rotate and save environment map in GUI.
 
-![envmap_viewer](https://user-images.githubusercontent.com/1129855/158065761-a03f4eca-d0b1-4f80-ad68-60a93eed7f39.gif)
+![envmap_viewer](https://user-images.githubusercontent.com/1129855/158066142-9b6006ed-2626-4488-8c8d-c1dd11f670eb.gif)
 
 # TODO
 
