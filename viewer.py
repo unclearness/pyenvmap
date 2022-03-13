@@ -21,8 +21,9 @@ if __name__ == '__main__':
     #===============#
     # Create frames #
     #===============#
-    frmL = tk.Frame(root)
-    frmC = tk.Frame(root)
+    frmImg = tk.Frame(root)
+    frmL = tk.Frame(frmImg)
+    frmC = tk.Frame(frmImg)
     frmR = tk.Frame(root)
     #==================#
     # Define methods 1 #
@@ -90,8 +91,9 @@ if __name__ == '__main__':
             print('Elements are not 9')
             return
         R = np.array(R_line).reshape((3, 3))
-        if np.abs(np.linalg.det(R) - 1) > 0.01:
-            print('determinant is not 1')
+        det = np.linalg.det(R)
+        if np.abs(det - 1) > 0.01:
+            print('determinant is not 1', det)
             return
         rotated = pem.rotateByMatrix(img_bgr_start, R)
         rotated_tk = formatConverter(rotated)
@@ -117,18 +119,8 @@ if __name__ == '__main__':
     # Define methods 2 #
     #==================#
 
-    # Do not forget 'event=None', or an arg error occurs.
-    def changeVal(event=None):
+    def update():
         global imgCVT, rotated_tk
-        """
-        size = 3 ** val1.get()
-        sigma = val2.get()
-        blur = cv2.GaussianBlur(img_bgr, (size, size), sigma)
-        blur_tk = formatConverter(blur)
-        imgCVT.configure(image=blur_tk)
-        label_val1.configure(text=size)
-        label_val2.configure(text=sigma)
-        """
         x = val1.get()
         y = val2.get()
         z = val3.get()
@@ -148,8 +140,10 @@ if __name__ == '__main__':
         text_box.delete('1.0', 'end')
         text_box.insert('1.0', R_text)
 
-    #    imgCVT.photo = blur_tk     #If you do not want "blur_tk" to be global val, activate this script instead.
-    #    imgCVT.image = blur_tk     #This will work as well as above.
+    # Do not forget 'event=None', or an arg error occurs.
+    def changeVal(event=None):
+        update()
+
     #================#
     # Create widgets #
     #================#
@@ -198,7 +192,8 @@ if __name__ == '__main__':
     label_val3 = tk.Label(frmR, text="0")
 
     load_path_var = tk.StringVar(frmR)
-    load_path_var.set("./data/studio_small_09_4k.exr")
+    # load_path_var.set("./data/studio_small_09_4k.exr")
+    load_path_var.set("./data/color.png")
     load_path_ent = tk.Entry(frmR, textvariable=load_path_var)
 
     load_text = tk.StringVar(frmR)
@@ -211,7 +206,7 @@ if __name__ == '__main__':
     #rot_val_var.set("1 0 0\n0 1 0\n0 0 1\n")
     #rot_val_ent = tk.Entry(frmR, textvariable=rot_val_var,)
 
-    text_box = tk.Text(height=3, width=30)
+    text_box = tk.Text(frmR, height=3, width=30)
     load_mat_text = tk.StringVar(frmR)
     load_mat_text.set("Load 3*3 rotation matrix")
     load_mat_button = tk.Button(
@@ -228,9 +223,10 @@ if __name__ == '__main__':
     #========#
     # Layout #
     #========#
+    frmImg.pack(side='left')
     frmL.pack(side='top')
     frmC.pack(side='top')
-    frmR.pack(side='left')
+    frmR.pack(side='right', after=frmImg)
 
     imgORG.pack(side='top')
     label_imgORG.pack(side='top')
@@ -244,11 +240,12 @@ if __name__ == '__main__':
     scale2.pack(side='top')
     label_val2.pack(side='top')
     scale3.pack(side='top')
+    label_val3.pack(side='top')
     text_box.pack(side='top')
     load_mat_button.pack(side='top')
-    # rot_val_ent.pack(side='top')
-    label_val3.pack(side='top')
     save_path_ent.pack(side='top')
     save_button.pack(side='top')
+
+    update()
 
     root.mainloop()
